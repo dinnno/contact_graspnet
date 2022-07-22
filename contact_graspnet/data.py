@@ -209,7 +209,7 @@ def regularize_pc_point_count(pc, npoints, use_farthest_point=False):
         if required > 0:
             index = np.random.choice(range(pc.shape[0]), size=required)
             pc = np.concatenate((pc, pc[index, :]), axis=0)
-    return pc
+    return pc, center_indexes
 
 def depth2pc(depth, K, rgb=None):
     """
@@ -655,17 +655,21 @@ class PointCloudReader:
 
         in_camera_pose = copy.deepcopy(camera_pose)
 
-        
-        if NVD:
-            pass
-        
         # 0.005 s
         _, depth, _, camera_pose = self._renderer.render(in_camera_pose, render_pc=False)
-        depth = self._augment_depth(depth)
-        
+        depth = self._augment_depth(depth)        
 
-        pc = self._renderer._to_pointcloud(depth)
-        pc = regularize_pc_point_count(pc, self._raw_num_points, use_farthest_point=self._use_farthest_point)
+        origin_pc = self._renderer._to_pointcloud(depth)
+        pc, index = regularize_pc_point_count(origin_pc, self._raw_num_points, use_farthest_point=self._use_farthest_point)
+
+        if NVD:
+            camera_z = np.array([0, 0, 1])
+            point_cloud = pc[..., :3].T
+            origin_nvd = np.dot(camera_z, point_cloud) #nvd shape: (number of sampled point from depth, )
+            nvd = origin_nvd[index]
+
+            pc = np.concatenate(pc, nvd, axis=1) #pc: 4 channels (origin pc) + 1 channel (nvd)
+
         pc = self._augment_pc(pc)
         
         pc_normals = estimate_normals_cam_from_pc(pc[:,:3], raw_num_points=self._raw_num_points) if estimate_normals else []
