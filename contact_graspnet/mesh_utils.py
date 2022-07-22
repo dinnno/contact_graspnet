@@ -25,7 +25,7 @@ class Object(object):
         :param filename: Mesh to load
         :param scale: Scaling factor
         """
-        self.mesh = trimesh.load(filename)
+        self.mesh = trimesh.load(filename, force='mesh')
         self.scale = 1.0
 
         # print(filename)

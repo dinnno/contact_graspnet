@@ -35,11 +35,11 @@ def train(global_config, log_dir):
         global_config {dict} -- config dict
         log_dir {str} -- Checkpoint directory
     """
-
     contact_infos = load_scene_contacts(global_config['DATA']['data_path'],
                                         scene_contacts_path=global_config['DATA']['scene_contacts_path'])
     
-    num_train_samples = len(contact_infos)-global_config['DATA']['num_test_scenes']
+    # num_train_samples = len(contact_infos)-global_config['DATA']['num_test_scenes']
+    num_train_samples = 1
     num_test_samples = global_config['DATA']['num_test_scenes']
         
     print('using %s meshes' % (num_train_samples + num_test_samples))
@@ -120,7 +120,7 @@ def train(global_config, log_dir):
 
 def train_one_epoch(sess, ops, summary_ops, file_writers, pcreader):
     """ ops: dict mapping from string to tf ops """
-    
+    one_epoch_step = int()
     log_string(str(datetime.now()))
     loss_log = np.zeros((10,7))
     get_time = time.time()
@@ -135,7 +135,7 @@ def train_one_epoch(sess, ops, summary_ops, file_writers, pcreader):
         feed_dict = {ops['pointclouds_pl']: batch_data, ops['cam_poses_pl']: cam_poses,
                      ops['scene_idx_pl']: scene_idx, ops['is_training_pl']: True}
 
-        step, summary, _, loss_val, dir_loss, bin_ce_loss, \
+        one_epoch_step, summary, _, loss_val, dir_loss, bin_ce_loss,\
         offset_loss, approach_loss, adds_loss, adds_gt2pred_loss, scene_idx = sess.run([ops['step'], summary_ops['merged'], ops['train_op'], ops['loss'], ops['dir_loss'], 
                                                                                         ops['bin_ce_loss'], ops['offset_loss'], ops['approach_loss'], ops['adds_loss'], 
                                                                                         ops['adds_gt2pred_loss'], ops['scene_idx']], feed_dict=feed_dict)
@@ -144,12 +144,13 @@ def train_one_epoch(sess, ops, summary_ops, file_writers, pcreader):
         loss_log[batch_idx%10,:] = loss_val, dir_loss, bin_ce_loss, offset_loss, approach_loss, adds_loss, adds_gt2pred_loss
         
         if (batch_idx+1)%10 == 0:
-            file_writers['train_writer'].add_summary(summary, step)
+            file_writers['train_writer'].add_summary(summary, one_epoch_step)
             f = tuple(np.mean(loss_log, axis=0)) + ((time.time() - get_time) / 10., )
             log_string('total loss: %f \t dir loss: %f \t ce loss: %f \t off loss: %f \t app loss: %f adds loss: %f \t adds_gt2pred loss: %f \t batch time: %f' % f)
             get_time = time.time()
-            
-    return step
+
+    
+    return one_epoch_step
 
 def eval_validation_scenes(sess, ops, summary_ops, file_writers, pcreader, max_eval_objects=500):
     """ ops: dict mapping from string to tf ops """
@@ -188,9 +189,9 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--ckpt_dir', default='checkpoints/contact_graspnet', help='Checkpoint dir')
-    parser.add_argument('--data_path', type=str, default=None, help='Grasp data root dir')
-    parser.add_argument('--max_epoch', type=int, default=None, help='Epochs to run')
-    parser.add_argument('--batch_size', type=int, default=None, help='Batch Size during training')
+    parser.add_argument('--data_path', type=str, default="/media/jun/nsj_stor2tb/data/grasp_data/acronym", help='Grasp data root dir')
+    parser.add_argument('--max_epoch', type=int, default=300, help='Epochs to run')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training')
     parser.add_argument('--arg_configs', nargs="*", type=str, default=[], help='overwrite config parameters')
     FLAGS = parser.parse_args()
 

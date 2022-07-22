@@ -153,7 +153,15 @@ class SceneRenderer:
         if not self._caching:
             self._cache = {}
             
-        for p,t,s in zip(obj_paths, obj_transforms, obj_scales):
+        new_obj_paths = []    
+        data_root = "/media/jun/nsj_stor2tb/data/grasp_data/acronym/meshes"
+        for p in obj_paths:
+            target = p.split('/')[-1]
+            new_path = os.path.join(data_root, target)
+            new_obj_paths.append(new_path)
+
+
+        for p,t,s in zip(new_obj_paths, obj_transforms, obj_scales):
 
             object_context = self._load_object(p, s)
             object_context = deepcopy(object_context)

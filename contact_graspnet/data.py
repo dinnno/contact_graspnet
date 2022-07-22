@@ -637,7 +637,7 @@ class PointCloudReader:
         else:
             return batch_data, cam_poses, scene_idx
 
-    def render_random_scene(self, estimate_normals=False, camera_pose=None):
+    def render_random_scene(self, estimate_normals=False, camera_pose=None, NVD=False):
         """
         Renders scene depth map, transforms to regularized pointcloud and applies augmentations
 
@@ -655,10 +655,15 @@ class PointCloudReader:
 
         in_camera_pose = copy.deepcopy(camera_pose)
 
+        
+        if NVD:
+            pass
+        
         # 0.005 s
         _, depth, _, camera_pose = self._renderer.render(in_camera_pose, render_pc=False)
         depth = self._augment_depth(depth)
         
+
         pc = self._renderer._to_pointcloud(depth)
         pc = regularize_pc_point_count(pc, self._raw_num_points, use_farthest_point=self._use_farthest_point)
         pc = self._augment_pc(pc)
@@ -694,7 +699,8 @@ class PointCloudReader:
         if visualize:
             self._visualizer.change_scene(obj_paths, obj_scales, obj_transforms)
 
-
+    def get_nvd(self, pc, cam_poses):
+        pass
 
     def __del__(self):
         print('********** terminating renderer **************')
